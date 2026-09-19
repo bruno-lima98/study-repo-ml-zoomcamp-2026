@@ -54,13 +54,36 @@ plt.show()
 df.isnull().sum()
 
 # %%
+missing_num = ["engine_hp", "engine_cylinders", "number_of_doors"]
+missing_cat = ["market_category", "engine_fuel_type"]
+
+for col in missing_num:
+    mode = float(df[col].mode())
+    df[col] = df[col].fillna(mode)
+
+for col in missing_cat:
+    df[col] = df[col].fillna("missing_info")
+
+df.isnull().sum()
+
+# %%
+df["age"] = 2026 - df["year"]
+
+# %%
 # 3. SPLITING DATASET
 
 from sklearn.model_selection import train_test_split
 
 # %%
-features = df.columns[0:-1]
-target= df.columns[-1]
+
+target = "msrp"
+features = []
+for i in df.columns:
+    if i != target:
+        features.append(i)
+
+# %%
+features
 # %%
 X = df[features]
 y = df[target]
@@ -93,3 +116,42 @@ y_val = np.log1p(y_train)
 y_test = np.log1p(y_train)
 
 # %%
+
+columns = [
+    "engine_hp",
+    "engine_cylinders",
+    "highway_mpg",
+    "city_mpg",
+    "popularity",
+    "age",
+    ]
+
+X_train[columns].head()
+# %%
+
+from sklearn import linear_model
+from sklearn.preprocessing import StandardScaler
+from sklearn import metrics
+
+# %%
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train[columns])
+X_val_scaled = scaler.transform(X_val[columns])
+X_test_scaled = scaler.transform(X_test[columns])
+
+# %%
+model = linear_model.LinearRegression()
+model.fit(X_train_scaled, y_train)
+
+# %%
+y_train_predict = model.predict(X_train_scaled)
+
+# %%
+rmse_train = metrics.root_mean_squared_error(
+    y_train, y_train_predict
+)
+
+r2_train = metrics.r2_score(y_train, y_train_predict)
+
+print("RMSE Treino:", rmse_train)
+print("R² Treino:", r2_train)
