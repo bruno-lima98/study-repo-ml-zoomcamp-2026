@@ -2,8 +2,12 @@
 import pandas as pd
 import numpy as np
 from IPython.display import display
+import random
 
 from sklearn import model_selection
+from sklearn.metrics import mutual_info_score
+from sklearn.feature_extraction import DictVectorizer
+from sklearn.linear_model import LogisticRegression
 
 # %%
 url = "https://raw.githubusercontent.com/alexeygrigorev/mlbookcamp-code/master/chapter-03-churn-prediction/WA_Fn-UseC_-Telco-Customer-Churn.csv"
@@ -36,6 +40,7 @@ df.head().T
 
 # %%
 df["churn"].value_counts()
+df = df.fillna(0)
 
 # %%
 df_full_train, df_test = model_selection.train_test_split(
@@ -62,6 +67,9 @@ print(len(df_test))
 # %%
 target = df.columns[-1]
 features = df.columns [:-1]
+
+X_full_train = df_full_train[features].copy()
+y_full_train = df_full_train[target].copy()
 
 X_train = df_train[features].copy()
 y_train = df_train[target].copy()
@@ -105,3 +113,75 @@ for col in categorical_columns:
     df_group["risk"] = df_group["mean"] / global_churn
     display(df_group)
     print()
+# %%
+def mutual_info_churn_score(series):
+    return mutual_info_score(series, df_full_train["churn"])
+
+mutual = df_full_train[categorical_columns].apply(mutual_info_churn_score)
+mutual.sort_values(ascending=False)
+
+# %%
+df_full_train[numerical_columns].corrwith(df_full_train["churn"])
+
+# %%
+train_dicts = X_train[categorical_columns + numerical_columns].to_dict(orient="records")
+val_dicts = X_val[categorical_columns + numerical_columns].to_dict(orient="records")
+
+dv = DictVectorizer(sparse=False)
+
+# %%
+X_train = dv.fit_transform(train_dicts)
+X_val = dv.transform(val_dicts)
+
+# %%
+list(dv.get_feature_names_out())
+
+# %%
+model = LogisticRegression()
+model.fit(X_train, y_train)
+
+# %%
+model.intercept_[0].round(4) # >> coeficiente independente
+
+# %%
+model.coef_[0].round(3) # >> coeficientes das features
+
+# %%
+y_pred = model.predict_proba(X_val)[:, 1]
+churn_decision = (y_pred >= 0.5)
+
+(y_val == churn_decision).mean()
+
+# %%
+dict(zip(dv.get_feature_names_out(), model.coef_[0].round(3)))
+
+# %%
+full_train_dicts = X_full_train[categorical_columns + numerical_columns].to_dict(orient="records")
+dv = DictVectorizer(sparse=False)
+
+X_full_train = dv.fit_transform(full_train_dicts)
+
+# %% 
+model = LogisticRegression()
+model.fit(X_full_train, y_full_train)
+
+# %%
+test_dicts = X_test[categorical_columns + numerical_columns].to_dict(orient="records")
+
+X_test = dv.transform(test_dicts)
+
+# %%
+y_pred = model.predict_proba(X_test)[:, 1]
+churn_decision = (y_pred >= 0.5)
+
+(churn_decision == y_test).mean()
+
+# %%
+rand = random.randint(0, len(X_test))
+customer = test_dicts[rand]
+
+X_small = dv.transform([customer])
+
+print(f"Probabilidade de churn (modelo): {model.predict_proba(X_small)[0, 1].round(4)}")
+print(f"Decisão (modelo): {model.predict(X_small)[0]}")
+print(f"Valor real: {y_test.iloc[rand]}")
