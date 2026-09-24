@@ -115,7 +115,7 @@ auc = roc_auc_score(y_test, y_pred)
 print(f'AUC = {round(auc,4)}')
 
 # MODEL SAVING
-with open(f"../files/{output_file}", "wb") as f_out:
+with open(f"/files/{output_file}", "wb") as f_out:
     pickle.dump((dv, model), f_out)
 
 print(f'The model is saved in {output_file}')
