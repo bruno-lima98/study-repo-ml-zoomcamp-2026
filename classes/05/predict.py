@@ -3,7 +3,7 @@ from flask import Flask, request, jsonify
 
 model_file = "model_C=10.bin"
 
-with open(f"/files/{model_file}", "rb") as f_in:
+with open(f"{model_file}", "rb") as f_in:
     dv, model = pickle.load(f_in)
 
 
