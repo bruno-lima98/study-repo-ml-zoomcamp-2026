@@ -88,7 +88,7 @@ with open(f"../files/{output_file}", "wb") as f_out:
 # %%
 model_file = "model_C=10.bin"
 
-with open(f"../files/{model_file}", "rb") as f_in:
+with open(f"/files/{model_file}", "rb") as f_in:
     dv, model = pickle.load(f_in)
 
 # %%
