@@ -582,7 +582,7 @@ df_scores = pd.DataFrame({
     })
 
 # %%
-plt.plot(df_scores["round"], df_scores["train_auc"], label="train")
+# plt.plot(df_scores["round"], df_scores["train_auc"], label="train")
 plt.plot(df_scores["round"], df_scores["val_auc"], label="validation")
 
 plt.xlabel("Boosting Round")
@@ -681,5 +681,18 @@ y_pred = model.predict(dtest)
 auc = roc_auc_score(y_test, y_pred)
 print(f"XGBoost | AUC = {auc:.4f}")
 
+df_scores = pd.DataFrame({
+    "round": range(1, num_boost_round+1),
+    "train_auc": evals_result["train"]["auc"],
+    "val_auc": evals_result["validation"]["auc"]
+    })
+
 # %%
-features = dv.get_feature_names_out()
+# plt.plot(df_scores["round"], df_scores["train_auc"], label="train")
+plt.plot(df_scores["round"], df_scores["val_auc"], label=f"Validation = {auc:.4f}")
+
+plt.xlabel("Boosting Round")
+plt.ylabel("AUC")
+plt.legend()
+plt.show()
+# %%
