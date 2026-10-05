@@ -126,3 +126,166 @@ plt.legend()
 plt.show()
 
 # %%
+def make_model(learning_rate=0.01):
+    base_model = Xception(
+        weights="imagenet", 
+        include_top=False,
+        input_shape=(150, 150, 3)
+        )
+
+    base_model.trainable = False
+
+    ##################################################################
+
+    inputs = keras.Input(shape=(150, 150, 3))
+    base = base_model(inputs, training=False)
+    vectors = keras.layers.GlobalAveragePooling2D()(base)
+    outputs = keras.layers.Dense(10)(vectors)
+    model = keras.Model(inputs, outputs)
+
+    ##################################################################
+
+    optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
+    loss = keras.losses.CategoricalCrossentropy(from_logits=True)
+
+    model.compile(
+        optimizer=optimizer, 
+        loss=loss, 
+        metrics=["accuracy"]
+        )
+
+    return model
+
+# %%
+learning_rate_values = [0.0001, 0.001, 0.01, 0.1]
+scores = {}
+
+for i in learning_rate_values:
+    print(i)
+    model = make_model(i)
+
+    history = model.fit(
+        train_ds, 
+        epochs=10, 
+        validation_data=val_ds
+        )
+    scores[i] = history.history
+
+    print
+    print()
+
+# %%
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+for lr, hist in scores.items():
+    axes[0].plot(hist["accuracy"], label=lr)
+    axes[1].plot(hist["val_accuracy"], label=lr)
+
+axes[0].set_title("Training Accuracy")
+axes[1].set_title("Validation Accuracy")
+
+axes[0].set_xticks(np.arange(10))
+axes[1].set_xticks(np.arange(10))
+
+axes[0].set_xlabel("Epoch")
+axes[1].set_xlabel("Epoch")
+
+axes[0].set_ylabel("Accuracy")
+axes[1].set_ylabel("Accuracy")
+
+axes[0].legend()
+axes[1].legend()
+
+plt.tight_layout()
+plt.show()
+
+# %%
+learning_rate = 0.001
+
+# %%
+model.save_weights("model_v1.weights.h5")
+
+# %%
+checkpoint = keras.callbacks.ModelCheckpoint(
+    "xception_v1_{epoch:02d}_{val_accuracy:.3f}.h5",
+    save_best_only=True,
+    monitor="val_accuracy",
+    mode="max"
+    )
+
+# %%
+learning_rate = 0.001
+
+model = make_model(learning_rate=learning_rate)
+
+history = model.fit(
+    train_ds, 
+    epochs=10, 
+    validation_data=val_ds,
+    callbacks=[checkpoint]
+    )
+
+# %%
+def make_model(learning_rate=0.01, size_inner=100):
+    base_model = Xception(
+        weights="imagenet", 
+        include_top=False,
+        input_shape=(150, 150, 3)
+        )
+
+    base_model.trainable = False
+
+    ##################################################################
+
+    inputs = keras.Input(shape=(150, 150, 3))
+    base = base_model(inputs, training=False)
+    vectors = keras.layers.GlobalAveragePooling2D()(base)
+
+    inner = keras.layers.Dense(size_inner, activation="relu")(vectors)
+
+    outputs = keras.layers.Dense(10)(inner)
+    model = keras.Model(inputs, outputs)
+
+    ##################################################################
+
+    optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
+    loss = keras.losses.CategoricalCrossentropy(from_logits=True)
+
+    model.compile(
+        optimizer=optimizer, 
+        loss=loss, 
+        metrics=["accuracy"]
+        )
+
+    return model
+
+# %%
+learning_rate = 0.001
+
+size_inner_values = [10, 100, 1000]
+scores = {}
+
+for i in size_inner_values:
+    print(i)
+    model = make_model(
+        learning_rate=learning_rate,
+        size_inner=i
+    )
+
+    history = model.fit(
+        train_ds, 
+        epochs=10, 
+        validation_data=val_ds
+        )
+    scores[i] = history.history
+
+    print
+    print()
+
+# %%
+for size, hist in scores.items():
+    plt.plot(hist["val_accuracy"], label=(f"val={size}"))
+
+plt.xticks(np.arange(10))
+plt.legend()
+plt.show()
