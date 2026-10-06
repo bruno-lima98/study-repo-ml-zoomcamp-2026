@@ -346,7 +346,7 @@ for i in dropout_values:
 
     history = model.fit(
         train_ds, 
-        epochs=10, 
+        epochs=30, 
         validation_data=val_ds
         )
     scores[i] = history.history
@@ -354,3 +354,197 @@ for i in dropout_values:
     print
     print()
 
+# %%
+model.save_weights("model_v3.weights.h5")
+model.save("model_v3.keras")
+
+# %%
+for dropout, hist in scores.items():
+    plt.plot(hist["val_accuracy"], label=(f"dropout_inner={dropout}"))
+
+plt.ylim(0.78, 0.85)
+plt.legend()
+plt.show()
+
+# %%
+train_gen = ImageDataGenerator(
+    preprocessing_function=preprocess_input,
+    shear_range=10,
+    zoom_range=0.1,
+    vertical_flip=True
+    )
+
+train_ds = train_gen.flow_from_directory(
+    "./data/clothing-dataset-small/train", 
+    target_size=(150, 150),
+    batch_size=32
+    )
+
+val_gen = ImageDataGenerator(
+    preprocessing_function=preprocess_input
+    )
+
+val_ds = val_gen.flow_from_directory(
+    "./data/clothing-dataset-small/validation", 
+    target_size=(150, 150),
+    batch_size=32,
+    shuffle=False
+    )
+
+# %%
+learning_rate = 0.001
+size = 100
+drop_rate = 0.2
+
+model = make_model(
+        learning_rate=learning_rate,
+        size_inner=size,
+        droprate=drop_rate
+    )
+
+history = model.fit(
+        train_ds, 
+        epochs=50, 
+        validation_data=val_ds
+        )
+
+# %%
+def make_model(input_size = 150, learning_rate=0.01, size_inner=100, droprate=0.5):
+    base_model = Xception(
+        weights="imagenet", 
+        include_top=False,
+        input_shape=(input_size, input_size, 3)
+        )
+
+    base_model.trainable = False
+
+    ##################################################################
+
+    inputs = keras.Input(shape=(input_size, input_size, 3))
+    base = base_model(inputs, training=False)
+    vectors = keras.layers.GlobalAveragePooling2D()(base)
+
+    inner = keras.layers.Dense(size_inner, activation="relu")(vectors)
+    drop = keras.layers.Dropout(droprate)(inner)
+
+    outputs = keras.layers.Dense(10)(drop)
+    model = keras.Model(inputs, outputs)
+
+    ##################################################################
+
+    optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
+    loss = keras.losses.CategoricalCrossentropy(from_logits=True)
+
+    model.compile(
+        optimizer=optimizer, 
+        loss=loss, 
+        metrics=["accuracy"]
+        )
+
+    return model
+
+# %%
+input_size = 299
+
+# %%
+train_gen = ImageDataGenerator(
+    preprocessing_function=preprocess_input,
+    shear_range=10,
+    zoom_range=0.1,
+    vertical_flip=True
+    )
+
+train_ds = train_gen.flow_from_directory(
+    "./data/clothing-dataset-small/train", 
+    target_size=(input_size, input_size),
+    batch_size=32
+    )
+
+val_gen = ImageDataGenerator(
+    preprocessing_function=preprocess_input
+    )
+
+val_ds = val_gen.flow_from_directory(
+    "./data/clothing-dataset-small/validation", 
+    target_size=(input_size, input_size),
+    batch_size=32,
+    shuffle=False
+    )
+
+# %%
+checkpoint = keras.callbacks.ModelCheckpoint(
+    "xception_v4_{epoch:02d}_{val_accuracy:.3f}.keras",
+    save_best_only=True,
+    monitor="val_accuracy",
+    mode="max"
+)
+
+# %%
+learning_rate = 0.001
+size = 100
+drop_rate = 0.2
+
+model = make_model(
+        learning_rate=learning_rate,
+        size_inner=size,
+        droprate=drop_rate,
+        input_size=input_size
+    )
+
+history = model.fit(
+        train_ds, 
+        epochs=30, 
+        validation_data=val_ds,
+        callbacks=[checkpoint]
+        )
+# %%
+model = keras.models.load_model("xception_v4_11_0.874.keras")
+
+# %%
+test_gen = ImageDataGenerator(
+    preprocessing_function=preprocess_input
+    )
+
+test_ds = test_gen.flow_from_directory(
+    "./data/clothing-dataset-small/test", 
+    target_size=(299, 299),
+    batch_size=32,
+    shuffle=False
+    )
+
+# %%
+model.evaluate(test_ds)
+# %%
+path = "./data/clothing-dataset-small/test/shoes"
+name = "3e35227b-2061-46eb-8379-a6844a4bd5ac.jpg"
+
+full = f"{path}/{name}"
+
+# %%
+img = load_img(full, target_size=(299, 299))
+
+x = np.array(img)
+X = np.array([x])
+
+# %%
+X = preprocess_input(X)
+
+# %%
+pred = model.predict(X)
+pred[0]
+
+# %%
+classes = [
+    "dress",
+    "hat",
+    "longsleeve",
+    "outwear",
+    "pants",
+    "shirt",
+    "shoes",
+    "shorts",
+    "skirt",
+    "t-shirt"
+]
+
+dict(zip(classes, pred[0]))
