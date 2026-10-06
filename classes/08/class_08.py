@@ -284,8 +284,73 @@ for i in size_inner_values:
 
 # %%
 for size, hist in scores.items():
-    plt.plot(hist["val_accuracy"], label=(f"val={size}"))
+    plt.plot(hist["val_accuracy"], label=(f"size_inner={size}"))
 
 plt.xticks(np.arange(10))
 plt.legend()
 plt.show()
+
+# %%
+model.save_weights("model_v2.weights.h5")
+model.save("model_v2.keras")
+
+# %%
+def make_model(learning_rate=0.01, size_inner=100, droprate=0.5):
+    base_model = Xception(
+        weights="imagenet", 
+        include_top=False,
+        input_shape=(150, 150, 3)
+        )
+
+    base_model.trainable = False
+
+    ##################################################################
+
+    inputs = keras.Input(shape=(150, 150, 3))
+    base = base_model(inputs, training=False)
+    vectors = keras.layers.GlobalAveragePooling2D()(base)
+
+    inner = keras.layers.Dense(size_inner, activation="relu")(vectors)
+    drop = keras.layers.Dropout(droprate)(inner)
+
+    outputs = keras.layers.Dense(10)(drop)
+    model = keras.Model(inputs, outputs)
+
+    ##################################################################
+
+    optimizer = keras.optimizers.Adam(learning_rate=learning_rate)
+    loss = keras.losses.CategoricalCrossentropy(from_logits=True)
+
+    model.compile(
+        optimizer=optimizer, 
+        loss=loss, 
+        metrics=["accuracy"]
+        )
+
+    return model
+
+# %%
+learning_rate = 0.001
+size = 100
+
+dropout_values = [0.0, 0.2, 0.5, 0.8]
+scores = {}
+
+for i in dropout_values:
+    print(i)
+    model = make_model(
+        learning_rate=learning_rate,
+        size_inner=size,
+        droprate=i
+    )
+
+    history = model.fit(
+        train_ds, 
+        epochs=10, 
+        validation_data=val_ds
+        )
+    scores[i] = history.history
+
+    print
+    print()
+
