@@ -3,3 +3,8 @@ classes/08/model_v2.keras
 classes/08/model_v2.weights.h5
 classes/08/*.keras
 classes/08/*.h5
+
+# Homework 8
+homeworks/08-deep-learning/data/
+homeworks/08-deep-learning/data.zip
+homeworks/08-deep-learning/.venv/
