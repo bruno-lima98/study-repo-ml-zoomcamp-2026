@@ -230,3 +230,32 @@ last_five = history_aug["evaluation_accuracy"][-5:]
 print(last_five)
 print(round(float(np.mean(last_five)), 2))
 # %%
+# %%
+import matplotlib.pyplot as plt
+
+with open("history_baseline.json") as f:
+    base = json.load(f)
+with open("history_augmented.json") as f:
+    aug = json.load(f)
+
+epochs = range(1, 21)
+train_acc = base["train_accuracy"] + aug["train_accuracy"]
+eval_acc = base["evaluation_accuracy"] + aug["evaluation_accuracy"]
+
+plt.figure(figsize=(9, 5))
+plt.plot(epochs, train_acc, marker="o", label="Train")
+plt.plot(epochs, eval_acc, marker="o", label="Held-out evaluation")
+plt.axvline(10.5, color="gray", linestyle="--")
+plt.text(10.7, min(train_acc + eval_acc), "augmentation starts", color="gray")
+
+plt.title("Curly vs straight hair CNN (PyTorch)")
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+plt.xticks(epochs)
+plt.legend()
+plt.tight_layout()
+plt.savefig("linkedin_plot.png", dpi=200)
+plt.show()
+
+
+# %%
