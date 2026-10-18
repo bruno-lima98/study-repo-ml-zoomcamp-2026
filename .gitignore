@@ -8,3 +8,10 @@ classes/08/*.h5
 homeworks/08-deep-learning/data/
 homeworks/08-deep-learning/data.zip
 homeworks/08-deep-learning/.venv/
+
+# Homework 9
+*.onnx
+*.onnx.data
+homeworks/09-serverless/sample.jpeg
+homeworks/09-serverless/.venv
+homeworks/09-serverless/__pycache__
